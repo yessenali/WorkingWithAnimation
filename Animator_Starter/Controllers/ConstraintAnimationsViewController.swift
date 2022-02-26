@@ -18,6 +18,7 @@ class ConstraintAnimationsViewController: UIViewController {
     
     // MARK: Additional variables
     var newsletterInfoLabel = UILabel()
+    var animManager: AnimationManager!
     
     // MARK: Appearance
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -33,9 +34,9 @@ class ConstraintAnimationsViewController: UIViewController {
         newsletterInfoLabel.text = "Help us make your animation code that much better by subscribing to our weekly newsletter! \n\n It's free and you can unsubscribe any time without hurting our feelings...much."
         newsletterInfoLabel.font = UIFont(name: "Bodoni 72 Oldstyle", size: 15)
         newsletterInfoLabel.textColor = .darkGray
-        newsletterInfoLabel.textAlignment = .left
-        newsletterInfoLabel.alpha = 1
-        newsletterInfoLabel.backgroundColor = .black
+        newsletterInfoLabel.textAlignment = .center
+        newsletterInfoLabel.alpha = 0
+        newsletterInfoLabel.backgroundColor = .clear
         newsletterInfoLabel.translatesAutoresizingMaskIntoConstraints = false
         newsletterInfoLabel.numberOfLines = 0
         
@@ -45,16 +46,105 @@ class ConstraintAnimationsViewController: UIViewController {
         super.viewWillAppear(animated)
         
         // TODO: Offscreen positioning
+        welcomeCenterX.constant -= AnimationManager.screenBounds.width
+        newsletterCenterX.constant -= AnimationManager.screenBounds.width
+       // animManager = AnimationManager(activeConstraints: [welcomeCenterX, newsletterCenterX])
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
         // TODO: Fire initial animations
+        animateViewsOnScreen()
     }
     
     // MARK: Actions
+    @IBAction func infoButtonPressed(_ sender: Any) {
+        animateNewsletterHeight()
+        animateWelcomeLabel()
+    }
+    
+    
     
     // MARK: Animations
+    func animateViewsOnScreen() {
+        UIView.animate(withDuration: 1.5, delay: 0.25, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: .curveEaseInOut, animations: {
+            self.welcomeCenterX.constant += AnimationManager.screenBounds.width
+            self.newsletterCenterX.constant += AnimationManager.screenBounds.width
+            
+//            self.welcomeCenterX.constant = self.animManager.constraintOrigins[0]
+//            self.newsletterCenterX.constant = self.animManager.constraintOrigins[1]
+            self.view.layoutIfNeeded()
+        }, completion: nil)
+    }
+    
+    func animateNewsletterHeight() {
+        
+        if let heightConstraint = newsletterView.returnConstraint(withID: "NewsletterHeight") {
+            print(heightConstraint.description)
+            heightConstraint.constant = 350
+        } else {
+            print("No constraint found for that ID...")
+        }
+            
+        UIView.animate(withDuration: 1.75, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0, options: []) {
+            self.view.layoutIfNeeded()
+        } completion: { completed in
+            self.addDynamicInfoLabel()
+        }
 
+    }
+    
+    func animateWelcomeLabel() {
+        let modifiedWelcomeTop = NSLayoutConstraint(item: welcomeLabel, attribute: .top, relatedBy: .equal, toItem: welcomeLabel.superview, attribute: .top, multiplier: 1, constant: 100)
+        
+        if let welcomeTop = view.returnConstraint(withID: "WelcomeLabelTop") {
+            print(welcomeTop.description)
+            welcomeTop.isActive = false
+            modifiedWelcomeTop.isActive = true
+        }
+        
+        UIView.animate(withDuration: 0.75) {
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    func addDynamicInfoLabel() {
+        newsletterView.addSubview(newsletterInfoLabel)
+        
+        let xAnchor =
+        newsletterInfoLabel.centerXAnchor.constraint(equalTo: newsletterView.leftAnchor, constant: -75)
+        let yAnchor =
+        newsletterInfoLabel.centerYAnchor.constraint(equalTo: newsletterView.centerYAnchor)
+        let widthAnchor =
+        newsletterInfoLabel.widthAnchor.constraint(equalTo: newsletterView.widthAnchor, multiplier: 0.75)
+        let heightAnchor =
+        newsletterInfoLabel.heightAnchor.constraint(equalTo: newsletterInfoLabel.widthAnchor)
+        
+        NSLayoutConstraint.activate([xAnchor, yAnchor, widthAnchor, heightAnchor])
+        self.view.layoutIfNeeded()
+        
+        UIView.animate(withDuration: 1.0) {
+            xAnchor.constant = self.newsletterView.frame.size.width / 2
+            self.newsletterInfoLabel.alpha = 1
+            self.view.layoutIfNeeded()
+        }
+    }
+}
+
+
+
+extension UIView {
+    
+    func returnConstraint(withID: String) -> NSLayoutConstraint? {
+        var constraintSearch: NSLayoutConstraint!
+        
+        for constraint in self.constraints {
+            if constraint.identifier == withID {
+                constraintSearch = constraint
+            }
+        }
+        
+        return constraintSearch
+    }
 }
